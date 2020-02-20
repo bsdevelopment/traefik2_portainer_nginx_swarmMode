@@ -1,0 +1,112 @@
+version: '3'
+
+services:
+  traefik:
+    image: traefik:v2.1.4
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - 80:80
+      - 443:443
+#    networks:
+#      - proxy
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/traefik.yml:/traefik.yml:ro
+      - ./data/acme.json:/acme.json
+      - ./data/config.yml:/config.yml:ro
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.traefik.entrypoints=http"
+        - "traefik.http.routers.traefik.rule=Host(`traefik.sportapparel.us`)"
+        - "traefik.http.middlewares.traefik-auth.basicauth.users=user:$$apr1$$q8eZFHjF$$Fvmkk//V6Btlaf2i/ju5n/"
+        - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
+        - "traefik.http.routers.traefik-secure.entrypoints=https"
+        - "traefik.http.routers.traefik-secure.rule=Host(`traefik.sportapparel.us`)"
+        - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
+        - "traefik.http.routers.traefik-secure.tls=true"
+        - "traefik.http.routers.traefik-secure.tls.certresolver=http"
+        - "traefik.http.routers.traefik-secure.service=api@internal"
+        - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+
+  portainer:
+    image: portainer/portainer:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+#    networks:
+#      - proxy
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data:/data
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.portainer.entrypoints=http"
+        - "traefik.http.routers.portainer.rule=Host(`portainer.sportapparel.us`)"
+        - "traefik.http.middlewares.portainer-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.portainer.middlewares=portainer-https-redirect"
+        - "traefik.http.routers.portainer-secure.entrypoints=https"
+        - "traefik.http.routers.portainer-secure.rule=Host(`portainer.sportapparel.us`)"
+        - "traefik.http.routers.portainer-secure.tls=true"
+        - "traefik.http.routers.portainer-secure.tls.certresolver=http"
+        - "traefik.http.routers.portainer-secure.service=portainer"
+        - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+#       - "traefik.docker.network=proxy"
+
+  nginx:
+    image: nginx
+    container_name: nginx
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+#    networks:
+#      - proxy
+    deploy:  
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.nginx.entrypoints=http"
+        - "traefik.http.routers.nginx.rule=Host(`nginx.sportapparel.us`)"
+        - "traefik.http.middlewares.nginx-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.nginx.middlewares=nginx-https-redirect"
+        - "traefik.http.routers.nginx-secure.entrypoints=https"
+        - "traefik.http.routers.nginx-secure.rule=Host(`nginx.sportapparel.us`)"
+        - "traefik.http.routers.nginx-secure.tls=true"
+        - "traefik.http.routers.nginx-secure.tls.certresolver=http"
+        - "traefik.http.routers.nginx-secure.service=nginx"
+        - "traefik.http.services.nginx.loadbalancer.server.port=80"
+#       - "traefik.docker.network=proxy"
+
+  whoami:
+    image: containous/whoami
+    container_name: whoami
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+#    networks:
+#      - proxy
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.whoami.entrypoints=http"
+        - "traefik.http.routers.whoami.rule=Host(`wp1.sportapparel.us`)"
+        - "traefik.http.middlewares.whoami-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.whoami.middlewares=whoami-https-redirect"
+        - "traefik.http.routers.whoami-secure.entrypoints=https"
+        - "traefik.http.routers.whoami-secure.rule=Host(`wp1.sportapparel.us`)"
+        - "traefik.http.routers.whoami-secure.tls=true"
+        - "traefik.http.routers.whoami-secure.tls.certresolver=http"
+        - "traefik.http.routers.whoami-secure.service=whoami"
+        - "traefik.http.services.whoami.loadbalancer.server.port=80"
+#      - "traefik.docker.network=proxy"
+
+#networks:
+#  proxy:
+#    external: true
